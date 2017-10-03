@@ -1,7 +1,7 @@
 IPCFILE=ipc:./testchain/geth.ipc
 PASSWORD=testtest
 
-SOURCEDIR=../../contracts
+SOURCEDIR=../contracts
 
 CROWDSALESOL=GazeCoinCrowdsale.sol
 CROWDSALEJS=GazeCoinCrowdsale.js

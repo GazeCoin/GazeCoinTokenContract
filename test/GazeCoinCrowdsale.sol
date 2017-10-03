@@ -278,8 +278,8 @@ contract GazeCoinCrowdsale is GazeCoin {
     // End Date
     //   Start Date + 7 days
     // ------------------------------------------------------------------------
-    uint public constant START_DATE = 1510585200;
-    uint public constant END_DATE = START_DATE + 7 days;
+    uint public constant START_DATE = 1507047129; // Tue  3 Oct 2017 16:12:09 UTC
+    uint public constant END_DATE = 1507047339; // Tue  3 Oct 2017 16:15:39 UTC
 
     // ------------------------------------------------------------------------
     // Minimum financing USD 2 million

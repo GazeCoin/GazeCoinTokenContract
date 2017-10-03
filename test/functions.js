@@ -14,10 +14,13 @@ addAccount(eth.accounts[3], "Account #3 - Advisors Wallet");
 addAccount(eth.accounts[4], "Account #4 - Team Wallet");
 addAccount(eth.accounts[5], "Account #5 - Contractors Wallet");
 addAccount(eth.accounts[6], "Account #6 - Growth Pool Wallet");
-addAccount(eth.accounts[7], "Account #7");
-// addAccount(eth.accounts[8], "Account #8");
-// addAccount(eth.accounts[9], "Account #9");
-// addAccount(eth.accounts[10], "Account #10");
+addAccount(eth.accounts[7], "Account #7 - Whitelisted");
+addAccount(eth.accounts[8], "Account #8 - Whitelisted");
+addAccount(eth.accounts[9], "Account #9");
+addAccount(eth.accounts[10], "Account #10");
+addAccount(eth.accounts[11], "Account #11");
+addAccount(eth.accounts[12], "Account #12");
+addAccount(eth.accounts[13], "Account #13");
 
 var minerAccount = eth.accounts[0];
 var contractOwnerAccount = eth.accounts[1];
@@ -27,9 +30,12 @@ var account4 = eth.accounts[4];
 var account5 = eth.accounts[5];
 var account6 = eth.accounts[6];
 var account7 = eth.accounts[7];
-// var account8 = eth.accounts[8];
-// var account9 = eth.accounts[9];
-// var account10 = eth.accounts[10];
+var account8 = eth.accounts[8];
+var account9 = eth.accounts[9];
+var account10 = eth.accounts[10];
+var account11 = eth.accounts[11];
+var account12 = eth.accounts[12];
+var account13 = eth.accounts[13];
 
 var baseBlock = eth.blockNumber;
 
@@ -62,11 +68,11 @@ function addTokenContractAddressAndAbi(address, tokenAbi) {
 // -----------------------------------------------------------------------------
 function printBalances() {
   var token = tokenContractAddress == null || tokenContractAbi == null ? null : web3.eth.contract(tokenContractAbi).at(tokenContractAddress);
-  var decimals = token == null ? 8 : token.decimals();
+  var decimals = token == null ? 18 : token.decimals();
   var i = 0;
   var totalTokenBalance = new BigNumber(0);
-  console.log("RESULT:  # Account                                             EtherBalanceChange                Token Name");
-  console.log("RESULT: -- ------------------------------------------ --------------------------- -------------------- ---------------------------");
+  console.log("RESULT:  # Account                                             EtherBalanceChange                          Token Name");
+  console.log("RESULT: -- ------------------------------------------ --------------------------- ------------------------------ ---------------------------");
   accounts.forEach(function(e) {
     var etherBalanceBaseBlock = eth.getBalance(e, baseBlock);
     var etherBalance = web3.fromWei(eth.getBalance(e).minus(etherBalanceBaseBlock), "ether");
@@ -75,9 +81,9 @@ function printBalances() {
     console.log("RESULT: " + pad2(i) + " " + e  + " " + pad(etherBalance) + " " + padToken(tokenBalance, decimals) + " " + accountNames[e]);
     i++;
   });
-  console.log("RESULT: -- ------------------------------------------ --------------------------- -------------------- ---------------------------");
+  console.log("RESULT: -- ------------------------------------------ --------------------------- ------------------------------ ---------------------------");
   console.log("RESULT:                                                                           " + padToken(totalTokenBalance, decimals) + " Total Token Balances");
-  console.log("RESULT: -- ------------------------------------------ --------------------------- -------------------- ---------------------------");
+  console.log("RESULT: -- ------------------------------------------ --------------------------- ------------------------------ ---------------------------");
   console.log("RESULT: ");
 }
 
@@ -231,49 +237,61 @@ function printTokenContractDetails() {
     var contract = eth.contract(tokenContractAbi).at(tokenContractAddress);
     var decimals = contract.decimals();
     console.log("RESULT: token.owner=" + contract.owner());
+    console.log("RESULT: token.newOwner=" + contract.newOwner());
     console.log("RESULT: token.totalSupply=" + contract.totalSupply().shift(-decimals));
     console.log("RESULT: token.name=" + contract.name());
     console.log("RESULT: token.symbol=" + contract.symbol());
     console.log("RESULT: token.decimals=" + decimals);
-    console.log("RESULT: token.transferAllowed=" + contract.transferAllowed());
-    console.log("RESULT: token.mintingFinished=" + contract.mintingFinished());
+    console.log("RESULT: token.START_DATE=" + contract.START_DATE() + " " + new Date(contract.START_DATE() * 1000).toString());
+    console.log("RESULT: token.END_DATE=" + contract.END_DATE() + " " + new Date(contract.END_DATE() * 1000).toString());
+    console.log("RESULT: token.USD_MINIMUM_GOAL=" + contract.USD_MINIMUM_GOAL());
+    console.log("RESULT: token.USD_HARD_CAP=" + contract.USD_HARD_CAP());
+    console.log("RESULT: token.WALLET_CROWDSALE=" + contract.WALLET_CROWDSALE());
+    console.log("RESULT: token.WALLET_ADVISORS=" + contract.WALLET_ADVISORS() + " " + contract.PERCENT_ADVISORS() + "%");
+    console.log("RESULT: token.WALLET_TEAM=" + contract.WALLET_TEAM() + " " + contract.PERCENT_TEAM() + "%");
+    console.log("RESULT: token.WALLET_CONTRACTORS=" + contract.WALLET_CONTRACTORS() + " " + contract.PERCENT_CONTRACTORS() + "%");
+    console.log("RESULT: token.WALLET_GROWTH_POOL=" + contract.WALLET_GROWTH_POOL() + " " + contract.PERCENT_GROWTH_POOL() + "%");
+    console.log("RESULT: token.tokensPerKEther=" + contract.tokensPerKEther());
+    console.log("RESULT: token.ethersRaised=" + contract.ethersRaised().shift(-18));
+    console.log("RESULT: token.finalised=" + contract.finalised());
+    console.log("RESULT: token.transferable=" + contract.transferable());
 
     var latestBlock = eth.blockNumber;
     var i;
 
-    var burnEvents = contract.Burn({}, { fromBlock: tokenFromBlock, toBlock: latestBlock });
+    var ownershipTransferredEvents = contract.OwnershipTransferred({}, { fromBlock: tokenFromBlock, toBlock: latestBlock });
     i = 0;
-    burnEvents.watch(function (error, result) {
-      console.log("RESULT: Burn " + i++ + " #" + result.blockNumber + " " + JSON.stringify(result.args));
+    ownershipTransferredEvents.watch(function (error, result) {
+      console.log("RESULT: OwnershipTransferred " + i++ + " #" + result.blockNumber + " " + JSON.stringify(result.args));
     });
-    burnEvents.stopWatching();
+    ownershipTransferredEvents.stopWatching();
 
-    var transferAllowedEvents = contract.TransferAllowed({}, { fromBlock: tokenFromBlock, toBlock: latestBlock });
+    var whitelistedEvents = contract.Whitelisted({}, { fromBlock: tokenFromBlock, toBlock: latestBlock });
     i = 0;
-    transferAllowedEvents.watch(function (error, result) {
-      console.log("RESULT: TransferAllowed " + i++ + " #" + result.blockNumber + " " + JSON.stringify(result.args));
+    whitelistedEvents.watch(function (error, result) {
+      console.log("RESULT: Whitelisted " + i++ + " #" + result.blockNumber + " " + JSON.stringify(result.args));
     });
-    transferAllowedEvents.stopWatching();
+    whitelistedEvents.stopWatching();
 
-    var mintEvents = contract.Mint({}, { fromBlock: tokenFromBlock, toBlock: latestBlock });
+    var precommitmentAddedEvents = contract.PrecommitmentAdded({}, { fromBlock: tokenFromBlock, toBlock: latestBlock });
     i = 0;
-    mintEvents.watch(function (error, result) {
-      console.log("RESULT: Mint " + i++ + " #" + result.blockNumber + " " + JSON.stringify(result.args));
+    precommitmentAddedEvents.watch(function (error, result) {
+      console.log("RESULT: PrecommitmentAdded " + i++ + " #" + result.blockNumber + " " + JSON.stringify(result.args));
     });
-    mintEvents.stopWatching();
+    precommitmentAddedEvents.stopWatching();
 
-    var mintFinishedEvents = contract.MintFinished({}, { fromBlock: tokenFromBlock, toBlock: latestBlock });
+    var tokensBoughtEvents = contract.TokensBought({}, { fromBlock: tokenFromBlock, toBlock: latestBlock });
     i = 0;
-    mintFinishedEvents.watch(function (error, result) {
-      console.log("RESULT: MintFinished " + i++ + " #" + result.blockNumber + " " + JSON.stringify(result.args));
+    tokensBoughtEvents.watch(function (error, result) {
+      console.log("RESULT: TokensBought " + i++ + " #" + result.blockNumber + " " + JSON.stringify(result.args));
     });
-    mintFinishedEvents.stopWatching();
+    tokensBoughtEvents.stopWatching();
 
     var approvalEvents = contract.Approval({}, { fromBlock: tokenFromBlock, toBlock: latestBlock });
     i = 0;
     approvalEvents.watch(function (error, result) {
-      console.log("RESULT: Approval " + i++ + " #" + result.blockNumber + " owner=" + result.args.owner + " spender=" + result.args.spender + " value=" +
-        result.args.value.shift(-decimals));
+      console.log("RESULT: Approval " + i++ + " #" + result.blockNumber + " owner=" + result.args.owner +
+        " spender=" + result.args.spender + " value=" + result.args.value.shift(-decimals));
     });
     approvalEvents.stopWatching();
 
