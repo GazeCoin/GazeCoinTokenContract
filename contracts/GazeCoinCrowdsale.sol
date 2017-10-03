@@ -278,7 +278,7 @@ contract GazeCoinCrowdsale is GazeCoin {
     // End Date
     //   Start Date + 7 days
     // ------------------------------------------------------------------------
-    uint public constant START_DATE = 1509397200;
+    uint public constant START_DATE = 1510585200;
     uint public constant END_DATE = START_DATE + 7 days;
 
     // ------------------------------------------------------------------------
@@ -290,13 +290,37 @@ contract GazeCoinCrowdsale is GazeCoin {
     // Pre-sale discounts are offered for 35% to SAFT investors and 30% to 
     // strategic investors. The pre-sale closes 48 hrs before 
     // the public ICO starts.
-    //
+    // ------------------------------------------------------------------------
+    uint public constant USD_MINIMUM_GOAL = 2000000;
+    uint public constant USD_HARD_CAP = 35000000;
+
+    // ------------------------------------------------------------------------
     // 70 % distributed in sale
     // Advisors 5 %
     // Team 10 %
     // Contractors 5 %
     // User Growth Pool 10%
     // ------------------------------------------------------------------------
+    address public constant WALLET_CROWDSALE = 0xa22AB8A9D641CE77e06D98b7D7065d324D3d6976;
+    address public constant WALLET_ADVISORS = 0xa33a6c312D9aD0E0F2E95541BeED0Cc081621fd0;
+    address public constant WALLET_TEAM = 0xa44a08d3F6933c69212114bb66E2Df1813651844;
+    address public constant WALLET_CONTRACTORS = 0xa55A151Eb00fded1634D27D1127b4bE4627079EA;
+    address public constant WALLET_GROWTH_POOL = 0xa66a85ede0CBE03694AA9d9dE0BB19c99ff55bD9;
+
+    uint public constant PERCENT_ADVISORS = 5;
+    uint public constant PERCENT_TEAM = 10;
+    uint public constant PERCENT_CONTRACTORS = 5;
+    uint public constant PERCENT_GROWTH_POOL = 10;
+    uint public constant PERCENT_RESERVE = PERCENT_ADVISORS + PERCENT_TEAM +
+        PERCENT_CONTRACTORS + PERCENT_GROWTH_POOL;
+
+    // ------------------------------------------------------------------------
+    // The whitelist
+    // ------------------------------------------------------------------------
+    mapping(address => uint) public whitelist;
+
+
+    // TODO: Replace hard cap
     uint public constant ETH_HARD_CAP = 5 ether;
 
     // Tokens per 1,000 ETH
@@ -310,9 +334,6 @@ contract GazeCoinCrowdsale is GazeCoin {
 
     // Tokens transferable?
     bool public transferable;
-
-    // My coffer
-    address public wallet; 
 
 
     // ------------------------------------------------------------------------
@@ -329,6 +350,22 @@ contract GazeCoinCrowdsale is GazeCoin {
     // ------------------------------------------------------------------------
     function GazeCoinCrowdsale() public GazeCoin() {
     }
+
+
+    // ------------------------------------------------------------------------
+    // Whitelist
+    // ------------------------------------------------------------------------
+    function addToWhitelist(address[] addresses, uint[] amounts)
+        public onlyOwner
+    {
+        require(addresses.length != 0 && addresses.length == amounts.length);
+        for (uint i = 0; i < addresses.length; i++) {
+            require(addresses[i] != 0x0);
+            whitelist[addresses[i]] = amounts[i];
+            Whitelisted(addresses[i], amounts[i]);
+        }
+    }
+    event Whitelisted(address indexed whitelistedAddress, uint amount);
 
 
     // ------------------------------------------------------------------------
@@ -392,14 +429,14 @@ contract GazeCoinCrowdsale is GazeCoin {
         // Log ETH contributed and tokens generated
         TokensBought(contributor, msg.value, tokens);
 
-        // Transfer ETH to coffer 
-        wallet.transfer(msg.value);
+        // Transfer ETH crowdsale wallet 
+        WALLET_CROWDSALE.transfer(msg.value);
     }
     event TokensBought(address indexed contributor, uint ethers, uint tokens);
 
 
     // ------------------------------------------------------------------------
-    // Finalise crowdsale, 20% of tokens for myself
+    // Finalise crowdsale, mint reserve tokens
     // ------------------------------------------------------------------------
     function finalise() public onlyOwner {
         // Can only finalise once
@@ -408,15 +445,22 @@ contract GazeCoinCrowdsale is GazeCoin {
         // Can only finalise if we are past end date, or hard cap reached
         require(block.timestamp > END_DATE || ethersRaised == ETH_HARD_CAP);
 
+        // Mint reserve tokens
+        uint divFactor = 100-PERCENT_RESERVE;
+        uint advisorTokens = totalSupply.mul(PERCENT_ADVISORS).div(divFactor);
+        uint teamTokens = totalSupply.mul(PERCENT_TEAM).div(divFactor);
+        uint contractorsTokens = totalSupply.mul(PERCENT_CONTRACTORS).div(divFactor);
+        uint growthPoolTokens = totalSupply.mul(PERCENT_GROWTH_POOL).div(divFactor);
+        mint(WALLET_ADVISORS, advisorTokens);
+        mint(WALLET_TEAM, teamTokens);
+        mint(WALLET_CONTRACTORS, contractorsTokens);
+        mint(WALLET_GROWTH_POOL, growthPoolTokens);
+
         // Mark as finalised 
         finalised = true;
 
         // Allow tokens to be transferable
         transferable = true;
-
-        // Mint tokens for my coffer, being 20% of crowdsold tokens
-        uint myTokens = totalSupply.mul(20).div(80);
-        mint(owner, myTokens);
     }
 
 
